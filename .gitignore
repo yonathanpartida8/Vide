@@ -1,0 +1,7 @@
+assets/
+analisis/*.jpg
+analisis/*.png
+analisis/*.wav
+analisis/frames/
+analisis/cortes/
+out/
