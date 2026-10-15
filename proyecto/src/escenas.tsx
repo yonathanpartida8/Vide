@@ -19,6 +19,7 @@ import {
   Tecleo,
   useT,
 } from "./ui";
+import { CodigoRapido } from "./codigo";
 
 // A · "Please, please, I really need" → REPL de Python suplicando
 export const EscenaREPL: React.FC = () => {
@@ -33,6 +34,14 @@ export const EscenaREPL: React.FC = () => {
   return (
     <AbsoluteFill>
       <Anillos />
+      <CodigoRapido
+        desde={0}
+        velocidad={9}
+        lineas={11}
+        size={15}
+        opacidad={0.35}
+        style={{ left: 50, top: 80, width: 520, height: 240 }}
+      />
       <Micro style={{ left: 60, top: 50 }}>
         {"python3.12 · REPL · pid 1337"}
       </Micro>
@@ -120,6 +129,16 @@ export const EscenaRed: React.FC = () => {
   }));
   return (
     <AbsoluteFill>
+      <CodigoRapido
+        desde={3.6}
+        velocidad={14}
+        lineas={20}
+        size={16}
+        offset={18}
+        opacidad={0.13}
+        numeros={false}
+        style={{ left: 40, top: 0, width: 1000 }}
+      />
       <svg width={1080} height={606} style={{ position: "absolute" }}>
         {nodos.map((n, k) => (
           <g key={k}>
@@ -294,6 +313,23 @@ export const EscenaEditor: React.FC = () => {
           </div>
         ) : null}
       </div>
+      {t >= 10.5 ? (
+        <CodigoRapido
+          desde={10.5}
+          velocidad={22}
+          lineas={5}
+          size={16}
+          offset={40}
+          style={{
+            left: 60,
+            top: 445,
+            width: 470,
+            height: 125,
+            borderLeft: `3px solid ${C.rojo}`,
+            paddingLeft: 12,
+          }}
+        />
+      ) : null}
       <Palabras
         palabras={LETRA.howAmI}
         size={58}
@@ -384,6 +420,15 @@ export const EscenaWhoami: React.FC = () => {
   return (
     <AbsoluteFill>
       <Anillos cx={540} cy={330} opacidad={0.35} />
+      <CodigoRapido
+        desde={16.6}
+        velocidad={11}
+        lineas={8}
+        size={15}
+        offset={8}
+        opacidad={0.6}
+        style={{ right: 40, top: 30, width: 470, height: 200 }}
+      />
       <div
         style={{
           position: "absolute",
@@ -463,7 +508,7 @@ export const EscenaRoot: React.FC = () => {
 // H · "Give me what I want." ×2 → la serpiente (Python) despierta
 export const EscenaSerpiente: React.FC = () => {
   const t = useT();
-  const dibujo = interpolate(t, [25.6, 27.2], [0, 1], {
+  const dibujo = interpolate(t, [26.2, 27.6], [0, 1], {
     ...clamp,
     easing: Easing.out(Easing.cubic),
   });
@@ -481,6 +526,16 @@ export const EscenaSerpiente: React.FC = () => {
   const segunda = t >= 29.0;
   return (
     <AbsoluteFill>
+      <CodigoRapido
+        desde={26.2}
+        velocidad={16}
+        lineas={20}
+        size={16}
+        offset={30}
+        opacidad={0.12}
+        numeros={false}
+        style={{ left: 560, top: 0, width: 500 }}
+      />
       <svg width={1080} height={606} style={{ position: "absolute" }}>
         {Array.from({ length: 9 }, (_, k) => (
           <path

@@ -54,6 +54,18 @@ export const useT = () => {
   return (frame + inicio) / fps;
 };
 
+// Transiciones de entrada. La escena anterior sigue renderizándose COLA
+// frames por debajo, así que la nueva se revela encima de ella.
+export type Entrada = "corte" | "barrido" | "glitch" | "zoom" | "iris";
+const DUR_ENTRADA: Record<Entrada, number> = {
+  corte: 0,
+  barrido: 8,
+  glitch: 6,
+  zoom: 7,
+  iris: 10,
+};
+const COLA = 10;
+
 // Escena: Sequence en tiempo absoluto + push-in de cámara (estilo.md §7)
 export const Escena: React.FC<{
   name: string;
@@ -61,15 +73,31 @@ export const Escena: React.FC<{
   hasta: number;
   zoom?: [number, number];
   fondo?: string;
+  entrada?: Entrada;
+  cola?: boolean; // false en inserciones sobre una escena que continúa
   children: React.ReactNode;
-}> = ({ name, desde, hasta, zoom = [1, 1.08], fondo = C.caja, children }) => {
+}> = ({
+  cola = true,
+  name,
+  desde,
+  hasta,
+  zoom = [1, 1.08],
+  fondo = C.caja,
+  entrada = "corte",
+  children,
+}) => {
   const { fps } = useVideoConfig();
   const from = Math.round(desde * fps);
   const dur = Math.round(hasta * fps) - from;
   return (
-    <Sequence name={name} from={from} durationInFrames={dur} premountFor={fps}>
+    <Sequence
+      name={name}
+      from={from}
+      durationInFrames={dur + (cola ? COLA : 0)}
+      premountFor={fps}
+    >
       <Inicio.Provider value={from}>
-        <Camara dur={dur} zoom={zoom} fondo={fondo}>
+        <Camara dur={dur} zoom={zoom} fondo={fondo} entrada={entrada}>
           {children}
         </Camara>
       </Inicio.Provider>
@@ -81,11 +109,53 @@ const Camara: React.FC<{
   dur: number;
   zoom: [number, number];
   fondo: string;
+  entrada: Entrada;
   children: React.ReactNode;
-}> = ({ dur, zoom, fondo, children }) => {
+}> = ({ dur, zoom, fondo, entrada, children }) => {
   const frame = useCurrentFrame();
+  const n = DUR_ENTRADA[entrada];
+  const p = n === 0 ? 1 : interpolate(frame, [0, n], [0, 1], clamp);
+  const pe = Easing.out(Easing.cubic)(p);
+  let clip: string | undefined;
+  let extra: React.CSSProperties = {};
+  if (p < 1) {
+    if (entrada === "barrido") clip = `inset(0 ${(1 - pe) * 100}% 0 0)`;
+    if (entrada === "iris") clip = `circle(${pe * 75}% at 50% 50%)`;
+    if (entrada === "zoom")
+      extra = {
+        scale: interpolate(pe, [0, 1], [1.35, 1]),
+        filter: `blur(${(1 - pe) * 14}px)`,
+        opacity: interpolate(p, [0, 0.5], [0, 1], clamp),
+      };
+    if (entrada === "glitch") {
+      // franjas horizontales aleatorias que se van encendiendo
+      const bandas = 12;
+      const on = Array.from(
+        { length: bandas },
+        (_, k) => random(`g${k}-${frame}`) < p * 1.3,
+      );
+      const stops = on
+        .map((v, k) => {
+          const c = v ? "#000" : "transparent";
+          return `${c} ${(k / bandas) * 100}%, ${c} ${((k + 1) / bandas) * 100}%`;
+        })
+        .join(", ");
+      extra = {
+        translate: `${(random(`gt${frame}`) - 0.5) * 50 * (1 - p)}px 0px`,
+        WebkitMaskImage: `linear-gradient(to bottom, ${stops})`,
+        maskImage: `linear-gradient(to bottom, ${stops})`,
+      };
+    }
+  }
   return (
-    <AbsoluteFill style={{ backgroundColor: fondo, overflow: "hidden" }}>
+    <AbsoluteFill
+      style={{
+        backgroundColor: fondo,
+        overflow: "hidden",
+        clipPath: clip,
+        ...extra,
+      }}
+    >
       <AbsoluteFill
         style={{
           scale: interpolate(frame, [0, dur], zoom, {
@@ -96,6 +166,35 @@ const Camara: React.FC<{
       >
         {children}
       </AbsoluteFill>
+      {entrada === "barrido" && p < 1 ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: `${pe * 100}%`,
+            width: 6,
+            marginLeft: -6,
+            background: C.naranja,
+            boxShadow: glow(C.naranja, 24),
+          }}
+        />
+      ) : null}
+      {entrada === "iris" && p < 1 ? (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: pe * 0.75 * 2 * 875.6,
+            height: pe * 0.75 * 2 * 875.6,
+            translate: "-50% -50%",
+            borderRadius: "50%",
+            border: `4px solid ${C.naranja}`,
+            boxShadow: glow(C.naranja, 20),
+          }}
+        />
+      ) : null}
     </AbsoluteFill>
   );
 };
